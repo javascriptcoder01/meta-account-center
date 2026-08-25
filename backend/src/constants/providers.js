@@ -1,0 +1,7 @@
+export const PROVIDERS = {
+  FACEBOOK: 'FACEBOOK',
+  INSTAGRAM: 'INSTAGRAM',
+  WHATSAPP: 'WHATSAPP'
+};
+
+export default PROVIDERS;

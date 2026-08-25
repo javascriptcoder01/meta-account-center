@@ -1,0 +1,63 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import ROUTES from '../../constants/routes.js';
+import LoadingSpinner from '../common/LoadingSpinner.jsx';
+
+export const ActivityHistoryHeader = ({ totalCount = 0, onRefresh, isLoading = false }) => {
+  return (
+    <header className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="flex items-start sm:items-center gap-4">
+          <Link
+            to={ROUTES.DASHBOARD}
+            aria-label="Back to Dashboard"
+            className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition shrink-0 mt-1 sm:mt-0"
+            title="Back to Dashboard"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </Link>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                Security & Audit Logs
+              </span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                {totalCount} {totalCount === 1 ? 'event' : 'events'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
+              Activity History
+            </h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Review recent activity, logins, and security events across your Meta accounts.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isLoading}
+            aria-label="Refresh activity history"
+            className="p-2.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer disabled:opacity-50"
+            title="Refresh history"
+          >
+            {isLoading ? (
+              <LoadingSpinner size="sm" color="text-slate-600" />
+            ) : (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default ActivityHistoryHeader;

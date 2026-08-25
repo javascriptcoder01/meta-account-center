@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-meta-blue: #0866ff;
+    --color-meta-blue-hover: #1877f2;
+    --color-meta-dark: #1c2b33;
+    --color-meta-bg: #f0f2f5;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased min-h-screen font-sans;
+    background-color: #f0f2f5;
+  }
+}
+
