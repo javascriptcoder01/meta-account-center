@@ -8,7 +8,7 @@ const getClearCookieOptions = () => {
     httpOnly: true,
     secure: config.env === 'production',
     sameSite: 'strict',
-    path: '/api/v1/auth'
+    path: '/api/auth'
   };
 };
 

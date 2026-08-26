@@ -8,7 +8,7 @@ const getCookieOptions = () => {
     httpOnly: true,
     secure: config.env === 'production',
     sameSite: 'strict',
-    path: '/api/v1/auth',
+    path: '/api/auth',
     maxAge: 7 * 24 * 60 * 60 * 1000
   };
 };
