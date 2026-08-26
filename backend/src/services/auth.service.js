@@ -38,7 +38,6 @@ export const sanitizeUser = (user) => {
 export const registerUser = async (userData) => {
   const { firstName, lastName, email, phone, dateOfBirth, password } = userData;
 
-  // 1. Duplicate checks
   const existingEmail = await User.findOne({ email: email.toLowerCase() });
   if (existingEmail) {
     throw new ApiError(409, 'An account with these details already exists.', ERROR_CODES.CONFLICT);
@@ -51,10 +50,8 @@ export const registerUser = async (userData) => {
     }
   }
 
-  // 2. Hash password using bcrypt
   const passwordHash = await bcrypt.hash(password, config.bcryptSaltRounds);
 
-  // Prepare documents
   const userPayload = {
     name: { firstName, lastName },
     email: email.toLowerCase(),
@@ -66,7 +63,6 @@ export const registerUser = async (userData) => {
     status: USER_STATUSES.ACTIVE
   };
 
-  // Primary Path: MongoDB/Mongoose Transaction
   const mongooseSession = await mongoose.startSession();
   mongooseSession.startTransaction();
 
@@ -104,7 +100,6 @@ export const registerUser = async (userData) => {
     await mongooseSession.abortTransaction();
     mongooseSession.endSession();
 
-    // Check if error is due to transaction unavailability (local standalone MongoDB)
     const isTransactionUnsupported = error.message.includes('transaction') || error.code === 20;
 
     if (isTransactionUnsupported) {
@@ -328,8 +323,95 @@ export const logoutAllDevices = async (userId) => {
   });
 };
 
+// export const forgotPassword = async (email) => {
+//   const user = await User.findOne({ email: email.toLowerCase() });
+
+//   const genericResponse = {
+//     message: 'If the account exists, a password reset link has been generated.'
+//   };
+
+//   if (!user || user.status !== USER_STATUSES.ACTIVE) {
+//     return genericResponse;
+//   }
+
+//   const rawResetToken = crypto.randomBytes(32).toString('hex');
+//   const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+
+//   const parsedResetExpires = parseExpiresIn(config.passwordResetExpiresIn);
+//   const expiresAt = new Date(Date.now() + parsedResetExpires);
+
+//   await PasswordResetToken.updateMany(
+//     { userId: user._id, usedAt: null },
+//     { $set: { usedAt: new Date() } }
+//   );
+
+//   await PasswordResetToken.create({
+//     userId: user._id,
+//     tokenHash,
+//     expiresAt
+//   });
+
+//   if (config.env === 'development') {
+//     logger.info(`[MOCK RESET URL]: http://localhost:5173/reset-password?token=${rawResetToken}`);
+//   }
+
+//   return genericResponse;
+// };
+
+// export const resetPassword = async (rawResetToken, newPassword) => {
+//   const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+
+//   const now = new Date();
+//   const resetTokenDoc = await PasswordResetToken.findOneAndUpdate(
+//     {
+//       tokenHash,
+//       usedAt: null,
+//       expiresAt: { $gt: now }
+//     },
+//     { $set: { usedAt: now } },
+//     { new: true }
+//   );
+
+//   if (!resetTokenDoc) {
+//     throw new ApiError(400, 'Invalid, expired, or already used reset token', ERROR_CODES.BAD_REQUEST);
+//   }
+
+//   const user = await User.findById(resetTokenDoc.userId);
+//   if (!user || user.status !== USER_STATUSES.ACTIVE) {
+//     throw new ApiError(400, 'User associated with reset token is no longer active', ERROR_CODES.BAD_REQUEST);
+//   }
+
+//   const newPasswordHash = await bcrypt.hash(newPassword, config.bcryptSaltRounds);
+
+//   user.passwordHash = newPasswordHash;
+//   await user.save();
+
+//   await SecuritySettings.findOneAndUpdate(
+//     { userId: user._id },
+//     { $set: { lastPasswordChangedAt: now } },
+//     { new: true }
+//   );
+
+//   await UserSession.updateMany(
+//     { userId: user._id, isActive: true },
+//     { $set: { isActive: false, revokedAt: now } }
+//   );
+
+//   await ActivityLog.create({
+//     userId: user._id,
+//     action: ACTIVITY_ACTIONS.PASSWORD_CHANGED,
+//     category: ACTIVITY_CATEGORIES.SECURITY,
+//     description: 'Password changed successfully via recovery flow'
+//   });
+// };
+
+
 export const forgotPassword = async (email) => {
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const normalizedEmail = email?.trim().toLowerCase();
+
+  const user = await User.findOne({
+    email: normalizedEmail
+  });
 
   const genericResponse = {
     message: 'If the account exists, a password reset link has been generated.'
@@ -339,15 +421,33 @@ export const forgotPassword = async (email) => {
     return genericResponse;
   }
 
-  const rawResetToken = crypto.randomBytes(32).toString('hex');
-  const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+  const rawResetToken = crypto
+    .randomBytes(32)
+    .toString('hex');
 
-  const parsedResetExpires = parseExpiresIn(config.passwordResetExpiresIn);
-  const expiresAt = new Date(Date.now() + parsedResetExpires);
+  const tokenHash = crypto
+    .createHash('sha256')
+    .update(rawResetToken)
+    .digest('hex');
+
+  const parsedResetExpires = parseExpiresIn(
+    config.passwordResetExpiresIn
+  );
+
+  const expiresAt = new Date(
+    Date.now() + parsedResetExpires
+  );
 
   await PasswordResetToken.updateMany(
-    { userId: user._id, usedAt: null },
-    { $set: { usedAt: new Date() } }
+    {
+      userId: user._id,
+      usedAt: null
+    },
+    {
+      $set: {
+        usedAt: new Date()
+      }
+    }
   );
 
   await PasswordResetToken.create({
@@ -356,50 +456,102 @@ export const forgotPassword = async (email) => {
     expiresAt
   });
 
+  const resetUrl =
+    `${config.frontendUrl || 'http://localhost:5173'}` +
+    `/reset-password?token=${rawResetToken}`;
+
   if (config.env === 'development') {
-    logger.info(`[MOCK RESET URL]: http://localhost:5173/reset-password?token=${rawResetToken}`);
+    logger.info(
+      `[MOCK RESET URL]: ${resetUrl}`
+    );
+
+    return {
+      ...genericResponse,
+      resetUrl
+    };
   }
 
   return genericResponse;
 };
 
 export const resetPassword = async (rawResetToken, newPassword) => {
-  const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+  const cleanToken = rawResetToken?.trim();
+
+  if (!cleanToken) {
+    throw new ApiError(
+      400,
+      'Reset token is required',
+      ERROR_CODES.BAD_REQUEST
+    );
+  }
+
+  const tokenHash = crypto
+    .createHash('sha256')
+    .update(cleanToken)
+    .digest('hex');
 
   const now = new Date();
-  const resetTokenDoc = await PasswordResetToken.findOneAndUpdate(
-    {
-      tokenHash,
-      usedAt: null,
-      expiresAt: { $gt: now }
-    },
-    { $set: { usedAt: now } },
-    { new: true }
-  );
+
+  const resetTokenDoc = await PasswordResetToken.findOne({
+    tokenHash,
+    usedAt: null,
+    expiresAt: { $gt: now }
+  });
 
   if (!resetTokenDoc) {
-    throw new ApiError(400, 'Invalid, expired, or already used reset token', ERROR_CODES.BAD_REQUEST);
+    throw new ApiError(
+      400,
+      'Invalid, expired, or already used reset token',
+      ERROR_CODES.BAD_REQUEST
+    );
   }
 
   const user = await User.findById(resetTokenDoc.userId);
+
   if (!user || user.status !== USER_STATUSES.ACTIVE) {
-    throw new ApiError(400, 'User associated with reset token is no longer active', ERROR_CODES.BAD_REQUEST);
+    throw new ApiError(
+      400,
+      'User associated with reset token is no longer active',
+      ERROR_CODES.BAD_REQUEST
+    );
   }
 
-  const newPasswordHash = await bcrypt.hash(newPassword, config.bcryptSaltRounds);
+  const newPasswordHash = await bcrypt.hash(
+    newPassword,
+    config.bcryptSaltRounds
+  );
 
   user.passwordHash = newPasswordHash;
+
   await user.save();
+
+  resetTokenDoc.usedAt = now;
+
+  await resetTokenDoc.save();
 
   await SecuritySettings.findOneAndUpdate(
     { userId: user._id },
-    { $set: { lastPasswordChangedAt: now } },
-    { new: true }
+    {
+      $set: {
+        lastPasswordChangedAt: now
+      }
+    },
+    {
+      new: true
+    }
   );
 
   await UserSession.updateMany(
-    { userId: user._id, isActive: true },
-    { $set: { isActive: false, revokedAt: now } }
+    {
+      userId: user._id,
+      isActive: true
+    },
+    {
+      $set: {
+        isActive: false,
+        revokedAt: now
+      }
+    }
   );
 
   await ActivityLog.create({

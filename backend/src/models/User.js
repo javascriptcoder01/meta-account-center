@@ -32,7 +32,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
       trim: true,
-      match: [/^\+[1-9]\d{1,14}$/, 'Please specify a valid E.164 phone number']
+      match: [/^\+[1-9]\d{1,14}$/, 'Please specify a valid +91 phone number']
     },
     dateOfBirth: {
       type: Date,

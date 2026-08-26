@@ -21,7 +21,7 @@ The refresh token is handled through the HttpOnly cookie. Do not manually put it
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
-Body: Rawa -> json
+Body: Raw -> json
 {
   "firstName": "Neeraj",
   "lastName": "Kumar",

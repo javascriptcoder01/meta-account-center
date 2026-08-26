@@ -136,16 +136,68 @@ export const refresh = asyncHandler(async (req, res) => {
 
 export const forgotPassword = asyncHandler(async (req, res) => {
   const result = await authService.forgotPassword(req.body.email);
-  return ApiResponse.success(res, result.message, {}, 200);
+  return ApiResponse.success(res, result.message, result.resetUrl ? { resulUrl: result.resetUrl } : {}, 200);
 });
+
+// export const resetPassword = asyncHandler(async (req, res) => {
+//   const { token, newPassword } = req.body;
+//   await authService.resetPassword(token, newPassword);
+
+//   res.clearCookie('refreshToken', getClearCookieOptions());
+
+//   return ApiResponse.success(res, 'Password changed successfully', {}, 200);
+// });
 
 export const resetPassword = asyncHandler(async (req, res) => {
   const { token, newPassword } = req.body;
-  await authService.resetPassword(token, newPassword);
 
-  res.clearCookie('refreshToken', getClearCookieOptions());
+  // OLD:
+  // const { token, newPassword } = req.body;
 
-  return ApiResponse.success(res, 'Password changed successfully', {}, 200);
+  // NEW:
+  // Validate token and password before service call
+  if (!token || typeof token !== 'string') {
+    return ApiResponse.error(
+      res,
+      'Reset token is required',
+      'BAD_REQUEST',
+      [],
+      400
+    );
+  }
+
+  if (!newPassword || typeof newPassword !== 'string') {
+    return ApiResponse.error(
+      res,
+      'New password is required',
+      'BAD_REQUEST',
+      [],
+      400
+    );
+  }
+
+  const cleanToken = token.trim();
+
+  await authService.resetPassword(
+    cleanToken,
+    newPassword
+  );
+
+  /*
+   * Refresh-token cookie clear karna technically okay hai,
+   * because service all active sessions revoke kar raha hai.
+   */
+  res.clearCookie(
+    'refreshToken',
+    getClearCookieOptions()
+  );
+
+  return ApiResponse.success(
+    res,
+    'Password changed successfully',
+    {},
+    200
+  );
 });
 
 export default {
