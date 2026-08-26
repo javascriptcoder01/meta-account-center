@@ -4,7 +4,7 @@
 http://localhost:5000/api
 
 In Postman create an environment:
-baseUrl = http://localhost:5000/api/v1
+baseUrl = http://localhost:5000/api
 accessToken = <empty initially>
 sessionId = <empty initially>
 resetToken = <empty initially>
