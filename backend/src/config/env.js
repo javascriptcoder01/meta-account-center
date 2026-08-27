@@ -15,11 +15,12 @@ if (nodeEnv !== 'production') {
 }
 
 if (nodeEnv === 'test') {
-  process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/meta_test';
-  process.env.DB_NAME = 'meta_test';
+  process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/meta';
+  process.env.DB_NAME = 'meta';
   process.env.CORS_ORIGIN = 'http://localhost:5173';
   process.env.LOG_LEVEL = 'silent';
-  process.env.JWT_ACCESS_SECRET = 'test_access_secret_longer_than_32_characters_long_for_security';
+  process.env.JWT_ACCESS_SECRET =
+    'test_access_secret_longer_than_32_characters_long_for_security';
   process.env.BCRYPT_SALT_ROUNDS = '4';
 }
 
